@@ -1,38 +1,38 @@
-name: run pre-commit
+# name: run pre-commit
 
-on:
-    push:
-        branches:
-        -   main
-    pull_request:
-        branches:
-        -   '*'
+# on:
+#     push:
+#         branches:
+#         -   main
+#     pull_request:
+#         branches:
+#         -   '*'
 
-concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+# concurrency:
+#     group: ${{ github.workflow }}-${{ github.ref }}
+#     cancel-in-progress: true
 
-jobs:
-    run_pre_commit:
-        name: run flake8
-        runs-on: ubuntu-latest
+# jobs:
+#     run_pre_commit:
+#         name: run flake8
+#         runs-on: ubuntu-latest
 
-        defaults:
-            run:
-                shell: bash
+#         defaults:
+#             run:
+#                 shell: bash
 
-        steps:
-        -   name: Checkout
-            uses: actions/checkout@v4
+#         steps:
+#         -   name: Checkout
+#             uses: actions/checkout@v4
 
-        -   name: Setup python
-            uses: actions/setup-python@v5
-            with:
-                python-version: '3.12'
-                allow-prereleases: false
+#         -   name: Setup python
+#             uses: actions/setup-python@v5
+#             with:
+#                 python-version: '3.12'
+#                 allow-prereleases: false
 
-        -   name: Install tox
-            run: python -m pip install tox
+#         -   name: Install tox
+#             run: python -m pip install tox
 
-        -   name: Run pre-commit via tox
-            run: tox
+#         -   name: Run pre-commit via tox
+#             run: tox

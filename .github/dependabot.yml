@@ -1,14 +1,14 @@
-# Documentation
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-version: 2
-updates:
--   package-ecosystem: github-actions
-    directory: /
-    schedule:
-        interval: monthly
-
-# NOTE: This doesn't work seem to work when the submodule points to a private repository
-# -   package-ecosystem: gitsubmodule
+# # Documentation
+# # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# version: 2
+# updates:
+# -   package-ecosystem: github-actions
 #     directory: /
 #     schedule:
-#         interval: daily
+#         interval: monthly
+
+# # NOTE: This doesn't work seem to work when the submodule points to a private repository
+# # -   package-ecosystem: gitsubmodule
+# #     directory: /
+# #     schedule:
+# #         interval: daily

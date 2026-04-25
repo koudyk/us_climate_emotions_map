@@ -1,90 +1,90 @@
-# NOTE: This workflow pushes to a private DockerHub repo
-name: Build and push image to DockerHub and AWS Lightsail
+# # NOTE: This workflow pushes to a private DockerHub repo
+# name: Build and push image to DockerHub and AWS Lightsail
 
-on:
-    push:
-        branches:
-        -   main
-    workflow_dispatch:
+# on:
+#     push:
+#         branches:
+#         -   main
+#     workflow_dispatch:
 
-jobs:
-    build:
-        runs-on: ubuntu-latest
-        env:
-            DOCKER_IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.SERVICE_NAME }}:nightly
-        steps:
-        -   name: Checkout
-            uses: actions/checkout@v4
-            with:
-                submodules: recursive
-                token: ${{ secrets.CLIMATE_DB_DATA_PAT }}
+# jobs:
+#     build:
+#         runs-on: ubuntu-latest
+#         env:
+#             DOCKER_IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.SERVICE_NAME }}:nightly
+#         steps:
+#         -   name: Checkout
+#             uses: actions/checkout@v4
+#             with:
+#                 submodules: recursive
+#                 token: ${{ secrets.CLIMATE_DB_DATA_PAT }}
 
-        -   name: Login to Docker Hub
-            uses: docker/login-action@v3
-            with:
-                username: ${{ vars.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
+#         -   name: Login to Docker Hub
+#             uses: docker/login-action@v3
+#             with:
+#                 username: ${{ vars.DOCKERHUB_USERNAME }}
+#                 password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-        -   name: Set up Docker Buildx
-            uses: docker/setup-buildx-action@v3
+#         -   name: Set up Docker Buildx
+#             uses: docker/setup-buildx-action@v3
 
-        # NOTE: 'load' is needed for the image to be available for the next steps
-        -   name: Build and push to DockerHub
-            uses: docker/build-push-action@v6
-            with:
-                context: .
-                file: ./Dockerfile
-                load: true
-                push: true
-                tags: ${{ env.DOCKER_IMAGE }}
+#         # NOTE: 'load' is needed for the image to be available for the next steps
+#         -   name: Build and push to DockerHub
+#             uses: docker/build-push-action@v6
+#             with:
+#                 context: .
+#                 file: ./Dockerfile
+#                 load: true
+#                 push: true
+#                 tags: ${{ env.DOCKER_IMAGE }}
 
-        # Sanity check
-        -   name: List Docker images
-            run: docker images
+#         # Sanity check
+#         -   name: List Docker images
+#             run: docker images
 
-        # NOTE: AWS CLI is also needed but should already be installed on the runner
-        # From https://docs.aws.amazon.com/en_us/lightsail/latest/userguide/amazon-lightsail-install-software.html
-        -   name: Install lightsailctl plugin
-            run: |
-                curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
-                sudo chmod +x /usr/local/bin/lightsailctl
+#         # NOTE: AWS CLI is also needed but should already be installed on the runner
+#         # From https://docs.aws.amazon.com/en_us/lightsail/latest/userguide/amazon-lightsail-install-software.html
+#         -   name: Install lightsailctl plugin
+#             run: |
+#                 curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
+#                 sudo chmod +x /usr/local/bin/lightsailctl
 
-        -   name: Authenticate with AWS
-            run: |
-                aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-                aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                aws configure set default.region ${{ vars.AWS_REGION }}
+#         -   name: Authenticate with AWS
+#             run: |
+#                 aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+#                 aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#                 aws configure set default.region ${{ vars.AWS_REGION }}
 
-        -   name: Push Docker image to AWS Lightsail service
-            run: |
-                aws lightsail push-container-image \
-                    --region ${{ vars.AWS_REGION }} \
-                    --service-name ${{ vars.SERVICE_NAME }} \
-                    --label webmap \
-                    --image ${{ env.DOCKER_IMAGE }}
+#         -   name: Push Docker image to AWS Lightsail service
+#             run: |
+#                 aws lightsail push-container-image \
+#                     --region ${{ vars.AWS_REGION }} \
+#                     --service-name ${{ vars.SERVICE_NAME }} \
+#                     --label webmap \
+#                     --image ${{ env.DOCKER_IMAGE }}
 
-                # Get uploaded image (different every time)
-                echo "LIGHTSAIL_IMAGE_TAG=$(aws lightsail get-container-images --service ${{ vars.SERVICE_NAME }} | jq -r .containerImages[0].image)" >> $GITHUB_ENV
+#                 # Get uploaded image (different every time)
+#                 echo "LIGHTSAIL_IMAGE_TAG=$(aws lightsail get-container-images --service ${{ vars.SERVICE_NAME }} | jq -r .containerImages[0].image)" >> $GITHUB_ENV
 
-        -   name: Create new Lightsail deployment
-            run: |
-                echo $LIGHTSAIL_IMAGE_TAG
+#         -   name: Create new Lightsail deployment
+#             run: |
+#                 echo $LIGHTSAIL_IMAGE_TAG
 
-                aws lightsail create-container-service-deployment \
-                --service-name ${{ vars.SERVICE_NAME }} \
-                --containers "{
-                    \"${{ vars.SERVICE_NAME }}\": {
-                    \"image\": \"$LIGHTSAIL_IMAGE_TAG\",
-                    \"ports\": {
-                        \"8050\": \"HTTP\"
-                    }
-                    }
-                }" \
-                --public-endpoint "{
-                    \"containerName\": \"${{ vars.SERVICE_NAME }}\",
-                    \"containerPort\": 8050,
-                    \"healthCheck\": {
-                        \"timeoutSeconds\": 60,
-                        \"intervalSeconds\": 120
-                    }
-                }"
+#                 aws lightsail create-container-service-deployment \
+#                 --service-name ${{ vars.SERVICE_NAME }} \
+#                 --containers "{
+#                     \"${{ vars.SERVICE_NAME }}\": {
+#                     \"image\": \"$LIGHTSAIL_IMAGE_TAG\",
+#                     \"ports\": {
+#                         \"8050\": \"HTTP\"
+#                     }
+#                     }
+#                 }" \
+#                 --public-endpoint "{
+#                     \"containerName\": \"${{ vars.SERVICE_NAME }}\",
+#                     \"containerPort\": 8050,
+#                     \"healthCheck\": {
+#                         \"timeoutSeconds\": 60,
+#                         \"intervalSeconds\": 120
+#                     }
+#                 }"
